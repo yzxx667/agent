@@ -6,18 +6,31 @@ import { DynamicForm } from "../DynamicForm";
 import { Button, Empty } from "antd";
 import { CloseOutlined } from "@ant-design/icons";
 
+/**
+ * 图标背景色映射
+ * 与 BaseNode 保持一致
+ */
+const iconColorClasses: Record<string, string> = {
+  blue: "bg-blue-500",
+  green: "bg-green-500",
+  red: "bg-red-500",
+  orange: "bg-orange-500",
+  purple: "bg-purple-500",
+  gray: "bg-gray-500",
+};
+
 export const PropertyPanel: React.FC = () => {
   // 获取选中的节点 ID
   const selectedNodeId = useWorkflowStore((state) => state.selectedNodeId);
 
   // 获取选中的节点
   const selectedNode = useWorkflowStore((state) =>
-    state.nodes.find((node) => node.id === selectedNodeId)
+    state.nodes.find((node) => node.id === selectedNodeId),
   );
 
   // 关闭面板
   const setSelectedNodeId = useWorkflowStore(
-    (state) => state.setSelectedNodeId
+    (state) => state.setSelectedNodeId,
   );
 
   // 如果没有选中节点，不渲染面板
@@ -63,26 +76,32 @@ export const PropertyPanel: React.FC = () => {
     );
   };
 
+  const iconBgClass = iconColorClasses[nodeConfig?.iconColor || "blue"];
+
   return (
     <div
       className="w-96 bg-white rounded-lg shadow-lg border border-gray-200
                   flex flex-col h-[calc(100vh-120px)] overflow-hidden"
+      data-panel="property" // 用于浮动面板判断点击区域
     >
       {/* 面板头部 */}
-      <div
-        className="h-12 px-4 flex items-center justify-between
-                    border-b border-gray-200 flex-shrink-0
-                    bg-gray-50 rounded-t-lg"
-      >
-        <div className="flex items-center gap-2">
-          {/* 节点图标 */}
-          <span className="text-lg">{nodeConfig?.icon}</span>
+      <div className="h-14 px-4 flex items-center justify-between border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          {/* 节点图标（带颜色背景） */}
+          <div
+            className={`w-8 h-8 rounded-lg ${iconBgClass} flex items-center justify-center text-white text-sm`}
+          >
+            {nodeConfig?.icon}
+          </div>
           {/* 节点类型名称 */}
-          <span className="font-medium text-gray-800">{nodeConfig?.label}</span>
+          <span className="font-medium text-gray-800 text-base">
+            {nodeConfig?.label}
+          </span>
         </div>
         {/* 关闭按钮 */}
         <Button
           type="text"
+          size="small"
           icon={<CloseOutlined />}
           onClick={() => setSelectedNodeId(null)}
           className="text-gray-400 hover:text-gray-600"

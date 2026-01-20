@@ -35,7 +35,7 @@ export const CodeNode: React.FC<CodeNodeProps> = ({ id, selected, data }) => {
       icon={<CodeOutlined />}
       title={data.label}
       subtitle={languageLabels[data.language]}
-      color={"orange"}
+      iconColor={"orange"}
       showInput={true}
       showOutput={true}
     />

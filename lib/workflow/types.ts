@@ -4,8 +4,8 @@
  * 这个文件定义了工作流编辑器中所有节点相关的类型
  */
 
-import type { Node, Edge } from '@xyflow/react'
-import type { ReactNode } from 'react'
+import type { Node, Edge } from "@xyflow/react";
+import type { ReactNode } from "react";
 
 /**
  * 节点类型枚举
@@ -17,11 +17,12 @@ import type { ReactNode } from 'react'
  */
 export enum NodeType {
   // 开始节点
-  START = 'start',
+  START = "start",
   // 结束节点
-  END = 'end',
+  END = "end",
   /** 代码节点 - 执行自定义代码 */
-  CODE = 'code'
+  CODE = "code",
+  LLM = "llm", // 新增
 }
 
 /**
@@ -29,22 +30,22 @@ export enum NodeType {
  * 用于在左侧节点面板中对节点进行分组显示
  */
 export type NodeCategory =
-  | 'trigger' // 触发器：开始节点等
-  | 'action' // 动作：HTTP请求、发送邮件等
-  | 'logic' // 逻辑：条件判断、循环等
-  | 'transform' // 转换：数据处理、格式转换等
-  | 'end' // 结束：结束节点
+  | "trigger" // 触发器：开始节点等
+  | "action" // 动作：HTTP请求、发送邮件等
+  | "logic" // 逻辑：条件判断、循环等
+  | "transform" // 转换：数据处理、格式转换等
+  | "end"; // 结束：结束节点
 
 /**
  * 分类中文名映射
  */
 export const categoryLabels: Record<NodeCategory, string> = {
-  trigger: '触发器',
-  action: '动作',
-  logic: '逻辑控制',
-  transform: '数据转换',
-  end: '结束'
-}
+  trigger: "触发器",
+  action: "动作",
+  logic: "逻辑控制",
+  transform: "数据转换",
+  end: "结束",
+};
 
 /**
  * 基础节点数据
@@ -54,39 +55,39 @@ export const categoryLabels: Record<NodeCategory, string> = {
  */
 export interface BaseNodeData {
   // 节点显示名称
-  label: string
+  label: string;
   // 节点描述
-  description?: string
+  description?: string;
   // 允许额外字段
-  [key: string]: unknown
+  [key: string]: unknown;
 }
 
 /**
  * 输入变量类型
  */
 export type InputVariableType =
-  | 'string'
-  | 'number'
-  | 'boolean'
-  | 'object'
-  | 'array'
+  | "string"
+  | "number"
+  | "boolean"
+  | "object"
+  | "array";
 
 /**
  * 输入变量定义（用于开始节点）
  */
 export interface InputVariable {
   /** 变量唯一标识 */
-  id: string
+  id: string;
   /** 变量名 */
-  name: string
+  name: string;
   /** 变量类型 */
-  type: InputVariableType
+  type: InputVariableType;
   /** 是否必填 */
-  required?: boolean
+  required?: boolean;
   /** 默认值 */
-  defaultValue?: string
+  defaultValue?: string;
   /** 变量描述 */
-  description?: string
+  description?: string;
 }
 
 /**
@@ -94,9 +95,21 @@ export interface InputVariable {
  */
 export interface StartNodeData extends BaseNodeData {
   /** 触发方式：manual-手动触发，schedule-定时触发，webhook-Webhook触发 */
-  triggerType: 'manual' | 'schedule' | 'webhook'
+  // triggerType: 'manual' | 'schedule' | 'webhook'
   /** 输入变量列表 */
-  inputs: InputVariable[]
+  inputs: InputVariable[];
+}
+
+/**
+ * 输出变量定义（用于结束节点）
+ */
+export interface EndOutputVariable {
+  /** 变量唯一标识 */
+  id: string;
+  /** 变量名 */
+  name: string;
+  /** 变量值（引用其他节点的输出或固定值） */
+  value: string;
 }
 
 /**
@@ -104,7 +117,8 @@ export interface StartNodeData extends BaseNodeData {
  */
 export interface EndNodeData extends BaseNodeData {
   /** 结束状态：success-成功，failure-失败 */
-  endStatus: 'success' | 'failure'
+  // endStatus: "success" | "failure";
+  outputVariables: EndOutputVariable[];
 }
 
 /**
@@ -112,28 +126,71 @@ export interface EndNodeData extends BaseNodeData {
  */
 export interface CodeNodeData extends BaseNodeData {
   /** 编程语言 */
-  language: 'javascript' | 'python'
+  language: "javascript" | "python";
   /** 代码内容 */
-  code: string
+  code: string;
+}
+
+/**
+ * 输出变量定义
+ */
+export interface LLMOutputVariable {
+  /** 变量名 */
+  name: string;
+  /** 变量类型 */
+  type: "string" | "number" | "boolean" | "object" | "array";
+  /** 变量描述 */
+  description?: string;
+}
+
+/**
+ * 大模型节点数据
+ */
+export interface LLMNodeData extends BaseNodeData {
+  /** 选择的模型 ID */
+  model?: string;
+  /** 是否启用温度参数 */
+  temperatureEnabled?: boolean;
+  /** 温度参数（0-1） */
+  temperature?: number;
+  /** 是否启用 Top P 参数 */
+  topPEnabled?: boolean;
+  /** Top P 参数（0-1） */
+  topP?: number;
+  /** 上下文变量（引用其他节点的输出） */
+  context?: string;
+  /** 提示词 */
+  prompt?: string;
+  /** 输出变量列表 */
+  outputs: LLMOutputVariable[];
 }
 
 /**
  * 所有节点数据的联合类型
  * 添加新节点时，需要在这里添加对应的数据类型
  */
-export type WorkflowNodeData = StartNodeData | EndNodeData | CodeNodeData
+export type WorkflowNodeData =
+  | StartNodeData
+  | EndNodeData
+  | CodeNodeData
+  | LLMNodeData;
 
 /**
  * 工作流节点类型
  * 继承自 ReactFlow 的 Node 类型，并指定我们的 data 类型
  */
-export type WorkflowNode = Node<WorkflowNodeData, NodeType>
+export type WorkflowNode = Node<WorkflowNodeData, NodeType>;
 
 /**
  * 工作流边类型
  * 暂时使用 ReactFlow 默认的 Edge 类型
  */
-export type WorkflowEdge = Edge
+export type WorkflowEdge = Edge;
+
+/**
+ * 图标颜色类型
+ */
+export type IconColor = "blue" | "green" | "red" | "orange" | "purple" | "gray";
 
 /**
  * 节点配置接口
@@ -146,26 +203,28 @@ export type WorkflowEdge = Edge
  */
 export interface NodeConfig<T extends WorkflowNodeData = WorkflowNodeData> {
   /** 节点类型 */
-  type: NodeType
+  type: NodeType;
   /** 节点名称（显示在节点面板中） */
-  label: string
+  label: string;
   /** 节点描述 */
-  description: string
+  description: string;
   /** 节点图标 */
-  icon: ReactNode
+  icon: ReactNode;
+  /** 图标背景色 */ // 新增
+  iconColor?: IconColor; // 新增
   /** 节点分类 */
-  category: NodeCategory
+  category: NodeCategory;
 
   /** 节点组件 */
-  component: React.ComponentType<{ data: T; id: string; selected?: boolean }>
+  component: React.ComponentType<{ data: T; id: string; selected?: boolean }>;
 
   /** 最大输入连接数，0 表示不限制 */
-  maxInputs: number
+  maxInputs: number;
   /** 最大输出连接数，0 表示不限制 */
-  maxOutputs: number
+  maxOutputs: number;
 
   /** 默认数据 */
-  defaultData: T
+  defaultData: T;
 
   /**
    * 属性面板配置（二选一）
@@ -174,9 +233,9 @@ export interface NodeConfig<T extends WorkflowNodeData = WorkflowNodeData> {
    *
    * 优先级：propertyPanel > formSchema
    */
-  formSchema?: FormField[]
+  formSchema?: FormField[];
   /** 自定义属性面板组件 */
-  propertyPanel?: React.ComponentType<PropertyPanelProps<T>>
+  propertyPanel?: React.ComponentType<PropertyPanelProps<T>>;
 }
 
 /**
@@ -184,20 +243,20 @@ export interface NodeConfig<T extends WorkflowNodeData = WorkflowNodeData> {
  * 用于动态表单渲染
  */
 export type FormFieldType =
-  | 'input' // 单行文本
-  | 'textarea' // 多行文本
-  | 'select' // 下拉选择
-  | 'switch' // 开关
-  | 'number' // 数字输入
-  | 'radio' // 单选
-  | 'checkbox' // 多选
+  | "input" // 单行文本
+  | "textarea" // 多行文本
+  | "select" // 下拉选择
+  | "switch" // 开关
+  | "number" // 数字输入
+  | "radio" // 单选
+  | "checkbox"; // 多选
 
 /**
  * 表单字段选项（用于 select、radio、checkbox）
  */
 export interface FormFieldOption {
-  label: string
-  value: string | number | boolean
+  label: string;
+  value: string | number | boolean;
 }
 
 /**
@@ -206,33 +265,33 @@ export interface FormFieldOption {
  */
 export interface FormField {
   /** 字段名（对应节点数据中的 key） */
-  name: string
+  name: string;
   /** 字段标签 */
-  label: string
+  label: string;
   /** 字段类型 */
-  type: FormFieldType
+  type: FormFieldType;
   /** 是否必填 */
-  required?: boolean
+  required?: boolean;
   /** 占位文本 */
-  placeholder?: string
+  placeholder?: string;
   /** 选项（用于 select、radio、checkbox） */
-  options?: FormFieldOption[]
+  options?: FormFieldOption[];
   /** 默认值 */
-  defaultValue?: unknown
+  defaultValue?: unknown;
   /** 提示信息（显示为问号图标） */
-  tooltip?: string
+  tooltip?: string;
   /** 字段描述（显示在输入框下方） */
-  description?: string
+  description?: string;
 }
 
 /**
  * 属性面板组件的 Props
  */
 export interface PropertyPanelProps<
-  T extends WorkflowNodeData = WorkflowNodeData
+  T extends WorkflowNodeData = WorkflowNodeData,
 > {
   /** 节点 ID */
-  nodeId: string
+  nodeId: string;
   /** 节点数据 */
-  data: T
+  data: T;
 }

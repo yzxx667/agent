@@ -1,6 +1,6 @@
-'use client'
+"use client";
 
-import React, { useCallback, useEffect } from 'react'
+import React, { useCallback, useEffect } from "react";
 import {
   ReactFlow,
   ReactFlowProvider,
@@ -10,29 +10,31 @@ import {
   BackgroundVariant,
   useReactFlow,
   type NodeTypes,
-  type NodeMouseHandler
-} from '@xyflow/react'
-import '@xyflow/react/dist/style.css'
+  type NodeMouseHandler,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
 
-import { useWorkflowStore } from '@/stores/workflowStore'
-import { initializeNodeRegistry, NodeType } from '@/lib/workflow'
-import type { WorkflowNode } from '@/lib/workflow'
-import { StartNode, EndNode, CodeNode } from '@/components/workflow/nodes'
-import { PropertyPanel } from '@/components/workflow/panels'
+import { useWorkflowStore } from "@/stores/workflowStore";
+import { LLMNode } from "@/components/workflow/nodes/LLMNode"; // 新增
+import { initializeNodeRegistry, NodeType } from "@/lib/workflow";
+import type { WorkflowNode } from "@/lib/workflow";
+import { StartNode, EndNode, CodeNode } from "@/components/workflow/nodes";
+import { PropertyPanel } from "@/components/workflow/panels";
 import {
   CanvasToolbar,
-  PlacingNodePreview
-} from '@/components/workflow/toolbar'
+  PlacingNodePreview,
+} from "@/components/workflow/toolbar";
 
 // 确保节点已注册
-initializeNodeRegistry()
+initializeNodeRegistry();
 
 // 节点类型映射（放在组件外部，避免重复创建）
 const nodeTypes: NodeTypes = {
   [NodeType.START]: StartNode,
   [NodeType.END]: EndNode,
-  [NodeType.CODE]: CodeNode
-}
+  [NodeType.CODE]: CodeNode,
+  [NodeType.LLM]: LLMNode, // 新增
+};
 
 /**
  * 画布内部组件
@@ -49,41 +51,41 @@ const CanvasContent: React.FC = () => {
     setSelectedNodeId,
     placingNodeType,
     addNode,
-    cancelPlacingNode
-  } = useWorkflowStore()
+    cancelPlacingNode,
+  } = useWorkflowStore();
 
   // 获取 ReactFlow 实例，用于坐标转换
-  const reactFlowInstance = useReactFlow()
+  const reactFlowInstance = useReactFlow();
 
   // 初始化默认节点
   useEffect(() => {
-    if (nodes.length > 0) return
+    if (nodes.length > 0) return;
 
     const initialNodes: WorkflowNode[] = [
       {
-        id: 'start_1',
+        id: "start_1",
         type: NodeType.START,
         position: { x: 100, y: 200 },
-        data: { label: '开始', triggerType: 'manual' }
+        data: { label: "开始", triggerType: "manual" },
       },
       {
-        id: 'end_1',
+        id: "end_1",
         type: NodeType.END,
         position: { x: 500, y: 200 },
-        data: { label: '结束', endStatus: 'success' }
-      }
-    ]
+        data: { label: "结束", endStatus: "success" },
+      },
+    ];
 
-    setNodes(initialNodes)
-  }, [nodes.length, setNodes])
+    setNodes(initialNodes);
+  }, [nodes.length, setNodes]);
 
   // 处理节点点击
   const handleNodeClick: NodeMouseHandler<WorkflowNode> = useCallback(
     (_event, node) => {
-      setSelectedNodeId(node.id)
+      setSelectedNodeId(node.id);
     },
-    [setSelectedNodeId]
-  )
+    [setSelectedNodeId],
+  );
 
   // 处理画布点击（核心：放置节点）
   const handlePaneClick = useCallback(
@@ -92,25 +94,25 @@ const CanvasContent: React.FC = () => {
         // 将屏幕坐标转换为画布坐标
         const position = reactFlowInstance.screenToFlowPosition({
           x: event.clientX,
-          y: event.clientY
-        })
+          y: event.clientY,
+        });
 
         // 节点预览是以鼠标为中心显示的，所以放置时也要居中
         // 节点大约宽 180px，高 70px，需要偏移一半
-        const nodeWidth = 180
-        const nodeHeight = 70
+        const nodeWidth = 180;
+        const nodeHeight = 70;
         const centeredPosition = {
           x: position.x - nodeWidth / 2,
-          y: position.y - nodeHeight / 2
-        }
+          y: position.y - nodeHeight / 2,
+        };
 
         // 添加节点
-        addNode(placingNodeType, centeredPosition)
+        addNode(placingNodeType, centeredPosition);
         // 退出放置模式
-        cancelPlacingNode()
+        cancelPlacingNode();
       } else {
         // 正常点击，取消选中
-        setSelectedNodeId(null)
+        setSelectedNodeId(null);
       }
     },
     [
@@ -118,21 +120,21 @@ const CanvasContent: React.FC = () => {
       reactFlowInstance,
       addNode,
       cancelPlacingNode,
-      setSelectedNodeId
-    ]
-  )
+      setSelectedNodeId,
+    ],
+  );
 
   // 处理键盘事件（ESC 取消放置）
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && placingNodeType) {
-        cancelPlacingNode()
+      if (event.key === "Escape" && placingNodeType) {
+        cancelPlacingNode();
       }
-    }
+    };
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [placingNodeType, cancelPlacingNode])
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [placingNodeType, cancelPlacingNode]);
 
   return (
     <ReactFlow
@@ -146,15 +148,15 @@ const CanvasContent: React.FC = () => {
       onPaneClick={handlePaneClick}
       fitView
       fitViewOptions={{ padding: 0.2 }}
-      defaultEdgeOptions={{ type: 'smoothstep', animated: false }}
-      className={placingNodeType ? 'cursor-crosshair' : ''}
+      defaultEdgeOptions={{ type: "smoothstep", animated: false }}
+      className={placingNodeType ? "cursor-crosshair" : ""}
     >
       {/* 背景网格 */}
       <Background
         variant={BackgroundVariant.Dots}
         gap={20}
         size={1}
-        color='#e5e7eb'
+        color="#e5e7eb"
       />
 
       {/* 控制栏（隐藏，用工具栏替代） */}
@@ -162,23 +164,23 @@ const CanvasContent: React.FC = () => {
         showZoom={false}
         showFitView={false}
         showInteractive={false}
-        className='hidden'
+        className="hidden"
       />
 
       {/* 右侧属性面板 */}
-      <Panel position='top-right' className='m-0 p-0'>
+      <Panel position="top-right" className="m-0 p-0">
         <PropertyPanel />
       </Panel>
 
       {/* 底部工具栏 */}
-      <Panel position='bottom-center' className='mb-4'>
+      <Panel position="bottom-center" className="mb-4">
         <CanvasToolbar />
       </Panel>
 
       {/* 放置模式提示 */}
       {placingNodeType && (
-        <Panel position='top-center' className='mt-4'>
-          <div className='bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg text-sm'>
+        <Panel position="top-center" className="mt-4">
+          <div className="bg-blue-500 text-white px-4 py-2 rounded-full shadow-lg text-sm">
             点击画布放置节点，按 ESC 取消
           </div>
         </Panel>
@@ -187,8 +189,8 @@ const CanvasContent: React.FC = () => {
       {/* 节点放置预览（跟随鼠标） */}
       <PlacingNodePreview />
     </ReactFlow>
-  )
-}
+  );
+};
 
 /**
  * 工作流编辑器画布区域
@@ -196,10 +198,10 @@ const CanvasContent: React.FC = () => {
  */
 export const EditorCanvas: React.FC = () => {
   return (
-    <div className='flex-1'>
+    <div className="flex-1">
       <ReactFlowProvider>
         <CanvasContent />
       </ReactFlowProvider>
     </div>
-  )
-}
+  );
+};

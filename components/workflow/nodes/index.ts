@@ -12,3 +12,5 @@ export type { EndNodeProps } from "./EndNode";
 
 export { CodeNode } from "./CodeNode";
 export type { CodeNodeProps } from "./CodeNode";
+
+export { LLMNode, MODEL_OPTIONS } from "./LLMNode"; // 新增

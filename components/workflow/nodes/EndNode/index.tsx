@@ -1,18 +1,17 @@
+/**
+ * 结束节点组件
+ *
+ * 工作流的出口节点，只有输入连接点，没有输出连接点
+ * 显示输出变量列表
+ */
 "use client";
 
-import React from "react";
-import { StopOutlined, CheckCircleOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
+import { Handle, Position } from "@xyflow/react";
+import { StopOutlined, DownOutlined, RightOutlined } from "@ant-design/icons";
+import type { EndNodeData } from "@/lib/workflow/types";
 import { BaseNode } from "../BaseNode";
-import type { EndNodeData } from "@/lib/workflow";
 
-/**
- * 开始节点组件 Props
- *
- * ReactFlow 会传入这些属性：
- * - id: 节点 ID
- * - data: 节点数据（我们定义的 StartNodeData）
- * - selected: 是否被选中
- */
 export interface EndNodeProps {
   id: string;
   data: EndNodeData;
@@ -20,33 +19,23 @@ export interface EndNodeProps {
 }
 
 /**
- * 触发类型的中文标签
+ * 结束节点组件
  */
-const statusConfig = {
-  success: {
-    icon: <CheckCircleOutlined />,
-    label: "成功结束",
-    color: "green" as const,
-  },
-  failure: {
-    icon: <StopOutlined />,
-    label: "失败结束",
-    color: "red" as const,
-  },
-};
-
 export const EndNode: React.FC<EndNodeProps> = ({ id, data, selected }) => {
-  const config = statusConfig[data.endStatus];
+  const [showOutputs, setShowOutputs] = useState(true);
+
+  // 获取输出变量列表
+  const outputVariables = data.outputVariables || [];
 
   return (
+    // 修改后
     <BaseNode
       id={id}
       selected={selected}
-      icon={config.icon}
-      title={data.label}
-      subtitle={config.label}
-      color={config.color}
-      showInput={true} // 结束节点有输入
+      icon={<StopOutlined />}
+      title="结束"
+      subtitle={"配置输出变量"}
+      iconColor="red" // color → iconColor
       showOutput={false}
     />
   );

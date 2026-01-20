@@ -2,14 +2,24 @@ import React from "react";
 import {
   CodeOutlined,
   PlayCircleOutlined,
+  RobotOutlined,
   StopOutlined,
 } from "@ant-design/icons";
 import { nodeRegistry } from "./nodeRegistry";
 import { NodeType } from "./types";
-import type { StartNodeData, EndNodeData, CodeNodeData } from "./types";
+import { StartPropertyPanel } from "@/components/workflow/panels/StartPropertyPanel";
+import { EndPropertyPanel } from "@/components/workflow/panels/EndPropertyPanel";
+import type {
+  StartNodeData,
+  EndNodeData,
+  CodeNodeData,
+  LLMNodeData,
+} from "./types";
 import { StartNode } from "@/components/workflow/nodes/StartNode";
 import { EndNode } from "@/components/workflow/nodes/EndNode";
 import { CodeNode } from "@/components/workflow/nodes";
+import { LLMNode } from "@/components/workflow/nodes/LLMNode"; // 新增
+import { LLMPropertyPanel } from "@/components/workflow/panels/LLMPropertyPanel"; // 新增
 
 /**
  * 注册所有节点类型
@@ -19,75 +29,39 @@ export function registerAllNodes() {
   nodeRegistry.register<StartNodeData>({
     type: NodeType.START,
     label: "开始",
-    description: "工作流的起点，定义触发方式",
+    description: "工作流的起点，定义输入变量",
     icon: React.createElement(PlayCircleOutlined),
+    iconColor: "green",
     category: "trigger",
     component: StartNode,
-    // 使用 formSchema 配置表单（简单表单）
-    formSchema: [
-      {
-        name: "label",
-        label: "节点名称",
-        type: "input",
-        required: true,
-        placeholder: "请输入节点名称",
-      },
-      {
-        name: "triggerType",
-        label: "触发方式",
-        type: "select",
-        required: true,
-        options: [
-          { label: "手动触发", value: "manual" },
-          { label: "定时触发", value: "schedule" },
-          { label: "Webhook 触发", value: "webhook" },
-        ],
-        tooltip: "选择工作流的触发方式",
-      },
-    ],
-    propertyPanel: undefined, // 后续实现
-    maxInputs: 0,
-    maxOutputs: 1,
+    // 使用自定义属性面板（支持动态添加变量）
+    propertyPanel: StartPropertyPanel,
+    maxInputs: 0, // 开始节点没有输入
+    maxOutputs: 1, // 只能有一个输出
+    // 修改后
     defaultData: {
       label: "开始",
-      triggerType: "manual",
+      inputs: [],
     },
   });
 
   // 注册结束节点
+  // ==================== 注册结束节点 ====================
   nodeRegistry.register<EndNodeData>({
     type: NodeType.END,
     label: "结束",
-    description: "工作流的终点",
+    description: "工作流的终点，定义输出变量",
     icon: React.createElement(StopOutlined),
+    iconColor: "red",
     category: "end",
     component: EndNode,
-    formSchema: [
-      {
-        name: "label",
-        label: "节点名称",
-        type: "input",
-        required: true,
-        placeholder: "请输入节点名称",
-      },
-      {
-        name: "endStatus",
-        label: "结束状态",
-        type: "radio",
-        required: true,
-        options: [
-          { label: "成功", value: "success" },
-          { label: "失败", value: "failure" },
-        ],
-        tooltip: "工作流结束时的状态",
-      },
-    ],
-    propertyPanel: undefined,
-    maxInputs: 1,
-    maxOutputs: 0,
+    // 使用自定义属性面板（支持动态添加变量）
+    propertyPanel: EndPropertyPanel,
+    maxInputs: 1, // 只能有一个输入
+    maxOutputs: 0, // 结束节点没有输出
     defaultData: {
       label: "结束",
-      endStatus: "success",
+      outputVariables: [], // 默认没有输出变量
     },
   });
 
@@ -97,6 +71,7 @@ export function registerAllNodes() {
     label: "代码",
     description: "执行自定义 JavaScript 或 Python 代码",
     icon: React.createElement(CodeOutlined),
+    iconColor: "orange",
     category: "action",
     component: CodeNode,
     formSchema: [
@@ -129,6 +104,39 @@ export function registerAllNodes() {
       label: "代码",
       language: "javascript",
       code: '// 在这里编写代码\nreturn { result: "Hello World" };',
+    },
+  });
+
+  // ==================== 注册大模型节点 ====================
+  nodeRegistry.register<LLMNodeData>({
+    type: NodeType.LLM,
+    label: "大模型",
+    description: "调用大语言模型（LLM）生成内容",
+    icon: React.createElement(RobotOutlined),
+    iconColor: "blue",
+    category: "action",
+    component: LLMNode,
+    // 使用自定义属性面板（复杂表单）
+    propertyPanel: LLMPropertyPanel,
+    maxInputs: 1,
+    maxOutputs: 1,
+    defaultData: {
+      label: "大模型",
+      model: undefined, // 默认未选择模型
+      temperatureEnabled: true, // 默认启用温度参数
+      temperature: 0.6, // 默认温度
+      topPEnabled: false, // 默认不启用 Top P
+      topP: 0.8, // 默认 Top P 值
+      context: "", // 上下文变量
+      prompt: "", // 提示词
+      outputs: [
+        // 默认输出变量
+        {
+          name: "text",
+          type: "string",
+          description: "生成内容",
+        },
+      ],
     },
   });
 }

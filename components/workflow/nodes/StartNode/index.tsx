@@ -1,18 +1,32 @@
+/**
+ * 开始节点组件
+ *
+ * 工作流的入口节点，只有输出连接点，没有输入连接点
+ * 显示输入变量列表
+ */
 "use client";
 
-import React from "react";
-import { PlayCircleOutlined } from "@ant-design/icons";
+import React, { useState } from "react";
+import { Handle, Position } from "@xyflow/react";
+import {
+  PlayCircleOutlined,
+  DownOutlined,
+  RightOutlined,
+} from "@ant-design/icons";
+import type { StartNodeData } from "@/lib/workflow/types";
 import { BaseNode } from "../BaseNode";
-import type { StartNodeData } from "@/lib/workflow";
 
 /**
- * 开始节点组件 Props
- *
- * ReactFlow 会传入这些属性：
- * - id: 节点 ID
- * - data: 节点数据（我们定义的 StartNodeData）
- * - selected: 是否被选中
+ * 变量类型显示映射
  */
+const typeLabels: Record<string, string> = {
+  string: "string",
+  number: "number",
+  boolean: "boolean",
+  object: "object",
+  array: "array",
+};
+
 export interface StartNodeProps {
   id: string;
   data: StartNodeData;
@@ -20,25 +34,24 @@ export interface StartNodeProps {
 }
 
 /**
- * 触发类型的中文标签
+ * 开始节点组件
  */
-const triggerTypeLabels: Record<StartNodeData["triggerType"], string> = {
-  manual: "手动触发",
-  schedule: "定时触发",
-  webhook: "Webhook 触发",
-};
-
 export const StartNode: React.FC<StartNodeProps> = ({ id, data, selected }) => {
+  const [showInputs, setShowInputs] = useState(true);
+
+  // 获取输入变量列表
+  const inputs = data.inputs || [];
+
   return (
+    // 修改后
     <BaseNode
       id={id}
       selected={selected}
       icon={<PlayCircleOutlined />}
-      title={data.label}
-      subtitle={triggerTypeLabels[data.triggerType]}
-      color="green"
-      showInput={false} // 开始节点没有输入
-      showOutput={true}
+      title="开始"
+      subtitle={"配置输入变量"}
+      iconColor="green" // color → iconColor
+      showInput={false}
     />
   );
 };
