@@ -1,7 +1,6 @@
 import {
-  APINodeData,
-  CodeInputVariable,
-  CodeNodeData,
+  BranchCondition,
+  BranchNodeData,
   PropertyPanelProps,
 } from "@/lib/workflow";
 import {
@@ -12,13 +11,11 @@ import { useWorkflowStore } from "@/stores/workflowStore";
 import {
   PlusOutlined,
   MinusCircleOutlined,
-  CopyOutlined,
-  ExpandOutlined,
   SearchOutlined,
+  BranchesOutlined,
 } from "@ant-design/icons";
-import { Divider, Input, message, Modal } from "antd";
-import TextArea from "antd/es/input/TextArea";
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Button, Divider, Input } from "antd";
+import { useState, useRef, useEffect, useMemo } from "react";
 
 interface VariableSelectorProps {
   visible: boolean;
@@ -189,198 +186,160 @@ const VariableInput: React.FC<VariableInputProps> = ({
   );
 };
 
-interface InputVariableEditorProps {
-  items: CodeInputVariable[];
-  onChange: (items: CodeInputVariable[]) => void;
+interface BranchEditorProps {
+  branches: BranchCondition[];
+  onChange: (branches: BranchCondition[]) => void;
   variables: WorkflowVariable[];
 }
 
-const InputVariableEditor: React.FC<InputVariableEditorProps> = ({
-  items,
+const BranchEditor: React.FC<BranchEditorProps> = ({
+  branches,
   onChange,
   variables,
 }) => {
   const handleAdd = () => {
-    const newItem: CodeInputVariable = {
-      id: `input-${Date.now()}`,
-      name: `arg${items.length + 1}`,
-      value: "",
+    const newBranch: BranchCondition = {
+      id: `branch-${Date.now()}`,
+      label: branches.length === 0 ? "如果" : "否则如果",
+      condition: "",
     };
-    onChange([...items, newItem]);
+    onChange([...branches, newBranch]);
   };
 
   const handleRemove = (id: string) => {
-    onChange(items.filter((item) => item.id !== id));
+    onChange(branches.filter((branch) => branch.id !== id));
+  };
+
+  const handleChange = (
+    id: string,
+    field: "label" | "condition",
+    newValue: string,
+  ) => {
+    onChange(
+      branches.map((branch) =>
+        branch.id === id ? { ...branch, [field]: newValue } : branch,
+      ),
+    );
   };
 
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between">
-        <span>输入</span>
+        <span className="text-sm font-medium text-gray-700">条件分支</span>
         <button onClick={handleAdd}>
           <PlusOutlined />
         </button>
       </div>
-      {items.map((item) => (
-        <div key={item.id} className="grid grid-cols-[1fr_1fr_24px] gap-2">
-          <Input
-            value={item.name}
-            onChange={(e) =>
-              onChange(
-                items.map((i) =>
-                  i.id === item.id ? { ...i, name: e.target.value } : i,
-                ),
-              )
-            }
-            placeholder="变量名"
-          />
-          <VariableInput
-            value={item.value}
-            onChange={(value) =>
-              onChange(
-                items.map((i) => (i.id === item.id ? { ...i, value } : i)),
-              )
-            }
-            variables={variables}
-          />
-          <button onClick={() => handleRemove(item.id)}>
-            <MinusCircleOutlined />
-          </button>
+
+      {branches.length === 0 ? (
+        <div className="border border-dashed border-gray-200 rounded-lg p-4 text-center text-gray-400">
+          点击 + 添加条件分支
         </div>
-      ))}
+      ) : (
+        <div className="space-y-3">
+          {branches.map((branch, index) => (
+            <div
+              key={branch.id}
+              className="border border-gray-200 rounded-lg p-3 space-y-2"
+            >
+              {/* 分支标签 */}
+              <div className="flex items-center gap-2">
+                <Input
+                  value={branch.label}
+                  onChange={(e) =>
+                    handleChange(branch.id, "label", e.target.value)
+                  }
+                  placeholder={index === 0 ? "如果" : "否则如果"}
+                />
+                <button onClick={() => handleRemove(branch.id)}>
+                  <MinusCircleOutlined />
+                </button>
+              </div>
+
+              {/* 条件表达式 */}
+              <div className="space-y-1">
+                <div className="text-xs text-gray-500">+ 添加条件</div>
+                <VariableInput
+                  value={branch.condition || ""}
+                  onChange={(v) => handleChange(branch.id, "condition", v)}
+                  placeholder="添加条件"
+                  variables={variables}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
 
-interface CodeEditorProps {
-  code: string;
-  onChange: (code: string) => void;
-  language?: string;
-}
-
-const CodeEditor: React.FC<CodeEditorProps> = ({
-  code,
-  onChange,
-  language,
-}) => {
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [fullscreenCode, setFullscreenCode] = useState(code);
-
-  const handleCopy = useCallback(() => {
-    navigator.clipboard.writeText(code);
-    message.success("代码已复制到剪贴板");
-  }, [code]);
-
-  const handleOpenFullscreen = () => {
-    setFullscreenCode(code);
-    setIsFullscreen(true);
-  };
-
-  const handleCloseFullscreen = () => {
-    onChange(fullscreenCode); // 保存全屏中的修改
-    setIsFullscreen(false);
-  };
-
-  return (
-    <div>
-      <div className="flex items-center justify-between">
-        <span>代码</span>
-        <div>
-          <button onClick={handleCopy}>
-            <CopyOutlined />
-          </button>
-          <button onClick={handleOpenFullscreen}>
-            <ExpandOutlined />
-          </button>
-        </div>
-      </div>
-      <TextArea
-        value={code}
-        onChange={(e) => onChange(e.target.value)}
-        style={{ backgroundColor: "#1e1e1e", color: "#d4d4d4" }}
-      />
-      <Modal
-        open={isFullscreen}
-        onCancel={handleCloseFullscreen}
-        onOk={handleCloseFullscreen}
-        width="90vw"
-      >
-        <TextArea
-          value={fullscreenCode}
-          onChange={(e) => setFullscreenCode(e.target.value)}
-        />
-      </Modal>
-    </div>
-  );
-};
-
-export const CodePropertyPanel: React.FC<PropertyPanelProps<CodeNodeData>> = ({
+export const BranchPropertyPanel: React.FC<PropertyPanelProps> = ({
   nodeId,
-  data,
 }) => {
   const { nodes, edges, updateNodeData } = useWorkflowStore();
+  const node = nodes.find((n) => n.id === nodeId);
 
-  // 获取上游可用变量
+  // 获取上游节点的可用变量
   const availableVariables = useMemo(() => {
     return getAvailableVariables(nodeId, nodes, edges);
   }, [nodeId, nodes, edges]);
 
-  // 更新节点数据
-  const handleUpdate = useCallback(
-    <K extends keyof CodeNodeData>(field: K, value: CodeNodeData[K]) => {
-      updateNodeData(nodeId, { [field]: value });
-    },
-    [nodeId, updateNodeData],
-  );
+  if (!node || node.type !== "branch") {
+    return <div className="p-4 text-gray-500">请选择一个分支器节点</div>;
+  }
+
+  const data = node.data as BranchNodeData;
+
+  const handleBranchesChange = (branches: BranchCondition[]) => {
+    updateNodeData(nodeId, { branches });
+  };
+
+  const handleToggleElseBranch = () => {
+    updateNodeData(nodeId, { showElseBranch: !data.showElseBranch });
+  };
 
   return (
-    <div className="space-y-4 p-4">
-      {/* 描述 */}
-      <div>
-        <div className="text-sm font-medium text-gray-700 mb-1">描述</div>
-        <Input.TextArea
-          value={data.description || ""}
-          onChange={(e) => handleUpdate("description", e.target.value)}
-          placeholder="描述这个 Code 节点的用途"
-          rows={2}
-        />
+    <div className="p-4 space-y-4">
+      {/* 节点标题 */}
+      <div className="flex items-center gap-2">
+        <div className="w-8 h-8 rounded-lg bg-orange-500 flex items-center justify-center text-white">
+          <BranchesOutlined />
+        </div>
+        <span className="font-medium text-gray-800">{data.label}</span>
       </div>
 
-      <Divider className="my-3" />
+      <Divider />
 
-      {/* 输入变量编辑器 */}
-      <InputVariableEditor
-        items={data.inputs}
-        onChange={(items) => handleUpdate("inputs", items)}
+      {/* 条件分支编辑器 */}
+      <BranchEditor
+        branches={data.branches || []}
+        onChange={handleBranchesChange}
         variables={availableVariables}
       />
 
-      <Divider className="my-3" />
+      <Divider />
 
-      <CodeEditor
-        code={data.code}
-        onChange={(code) => handleUpdate("code", code)}
-        language={data.language}
-      />
-
-      <Divider className="my-3" />
-
-      {/* 输出 */}
-      <div>
-        <div className="text-sm font-medium text-gray-700 mb-2">输出</div>
-        <div className="space-y-2">
-          {data.outputs?.map((output, index) => (
-            <div
-              key={output.name}
-              className="flex items-center justify-between p-2 bg-gray-50 rounded"
-            >
-              <span className="text-sm text-gray-800">{output.name}</span>
-              <span className="text-xs text-gray-400 capitalize">
-                {output.type}
-              </span>
-            </div>
-          ))}
+      {/* 否则分支开关 */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-gray-700">否则分支</span>
+          <Button
+            type={data.showElseBranch ? "primary" : "default"}
+            size="small"
+            onClick={handleToggleElseBranch}
+          >
+            {data.showElseBranch ? "已启用" : "已禁用"}
+          </Button>
         </div>
+        {data.showElseBranch && (
+          <div className="bg-gray-50 rounded-lg p-3">
+            <div className="text-sm text-gray-800 font-medium">否则</div>
+            <div className="text-xs text-gray-500">
+              用于定义当 if 条件不满足时应执行的逻辑。
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

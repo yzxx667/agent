@@ -25,6 +25,7 @@ import {
   PlacingNodePreview,
 } from "@/components/workflow/toolbar";
 import { APINode } from "../nodes/APINode";
+import { BranchNode } from "../nodes/BranchNode";
 
 // 确保节点已注册
 initializeNodeRegistry();
@@ -36,6 +37,7 @@ const nodeTypes: NodeTypes = {
   [NodeType.CODE]: CodeNode,
   [NodeType.LLM]: LLMNode, // 新增
   [NodeType.API]: APINode,
+  [NodeType.BRANCH]: BranchNode, // 新增
 };
 
 /**

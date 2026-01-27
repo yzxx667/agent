@@ -153,6 +153,11 @@ export function extractNodeOutputs(
       }));
     }
 
+    case NodeType.BRANCH: {
+      // 分支器节点不产生输出变量，只是根据条件引导流程
+      return [];
+    }
+
     default:
       return [];
   }

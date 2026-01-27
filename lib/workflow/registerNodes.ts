@@ -1,6 +1,7 @@
 import React from "react";
 import {
   ApiOutlined,
+  BranchesOutlined,
   CodeOutlined,
   PlayCircleOutlined,
   RobotOutlined,
@@ -16,6 +17,7 @@ import type {
   CodeNodeData,
   LLMNodeData,
   APINodeData,
+  BranchNodeData,
 } from "./types";
 import { StartNode } from "@/components/workflow/nodes/StartNode";
 import { EndNode } from "@/components/workflow/nodes/EndNode";
@@ -25,6 +27,8 @@ import { LLMPropertyPanel } from "@/components/workflow/panels/LLMPropertyPanel"
 import { APIPropertyPanel } from "@/components/workflow/panels/APIPropertyPanel";
 import { CodePropertyPanel } from "@/components/workflow/panels/CodePropertyPanel";
 import { APINode } from "@/components/workflow/nodes/APINode";
+import { BranchPropertyPanel } from "@/components/workflow/panels/BranchPropertyPanel";
+import { BranchNode } from "@/components/workflow/nodes/BranchNode";
 
 /**
  * 注册所有节点类型
@@ -203,6 +207,31 @@ def main(arg1: str, arg2: str) -> dict:
         { id: "input-2", name: "arg2", value: "" },
       ],
       outputs: [{ id: "output-1", name: "result", type: "object" }],
+    },
+  });
+
+  // ==================== 注册分支 ====================
+  nodeRegistry.register<BranchNodeData>({
+    type: NodeType.BRANCH,
+    label: "分支器",
+    description: "根据条件将工作流引导到不同的分支路径",
+    icon: React.createElement(BranchesOutlined),
+    iconColor: "orange",
+    category: "logic", // 逻辑控制分类
+    component: BranchNode,
+    propertyPanel: BranchPropertyPanel,
+    maxInputs: 1,
+    maxOutputs: 0, // 动态输出，不限制
+    defaultData: {
+      label: "分支器",
+      branches: [
+        {
+          id: "branch-1",
+          label: "如果",
+          condition: "",
+        },
+      ],
+      showElseBranch: true, // 默认显示否则分支
     },
   });
 }
