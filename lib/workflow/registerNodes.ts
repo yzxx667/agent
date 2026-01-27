@@ -1,5 +1,6 @@
 import React from "react";
 import {
+  ApiOutlined,
   CodeOutlined,
   PlayCircleOutlined,
   RobotOutlined,
@@ -14,12 +15,16 @@ import type {
   EndNodeData,
   CodeNodeData,
   LLMNodeData,
+  APINodeData,
 } from "./types";
 import { StartNode } from "@/components/workflow/nodes/StartNode";
 import { EndNode } from "@/components/workflow/nodes/EndNode";
 import { CodeNode } from "@/components/workflow/nodes";
 import { LLMNode } from "@/components/workflow/nodes/LLMNode"; // 新增
 import { LLMPropertyPanel } from "@/components/workflow/panels/LLMPropertyPanel"; // 新增
+import { APIPropertyPanel } from "@/components/workflow/panels/APIPropertyPanel";
+import { CodePropertyPanel } from "@/components/workflow/panels/CodePropertyPanel";
+import { APINode } from "@/components/workflow/nodes/APINode";
 
 /**
  * 注册所有节点类型
@@ -137,6 +142,67 @@ export function registerAllNodes() {
           description: "生成内容",
         },
       ],
+    },
+  });
+
+  // ==================== 注册API节点 ====================
+  nodeRegistry.register<APINodeData>({
+    type: NodeType.API,
+    label: "API",
+    description: "发送 HTTP 请求，支持 GET/POST/PUT/DELETE/PATCH",
+    icon: React.createElement(ApiOutlined),
+    iconColor: "green",
+    category: "action",
+    component: APINode,
+    propertyPanel: APIPropertyPanel,
+    maxInputs: 1,
+    maxOutputs: 1,
+    defaultData: {
+      label: "API",
+      method: "GET",
+      url: "",
+      params: [],
+      headers: [],
+      authEnabled: false,
+      bodyType: "none",
+      bodyFormData: [],
+      bodyJson: "",
+      bodyRaw: "",
+      timeout: 120,
+      retryCount: 3,
+      outputs: [
+        { name: "body", type: "string", description: "响应内容" },
+        { name: "status_code", type: "number", description: "响应状态码" },
+        { name: "headers", type: "object", description: "响应头列表 JSON" },
+      ],
+    },
+  });
+
+  // ==================== 注册代码 ====================
+  nodeRegistry.register<CodeNodeData>({
+    type: NodeType.CODE,
+    label: "代码",
+    description: "执行自定义 JavaScript 或 Python3 代码",
+    icon: React.createElement(CodeOutlined),
+    iconColor: "orange",
+    category: "action",
+    component: CodeNode,
+    propertyPanel: CodePropertyPanel, // 注册自定义属性面板
+    maxInputs: 1,
+    maxOutputs: 1,
+    defaultData: {
+      label: "代码",
+      language: "python3", // 默认 Python3
+      code: `# 默认代码模板
+def main(arg1: str, arg2: str) -> dict:
+    return {
+        "result": arg1 + arg2,
+    }`,
+      inputs: [
+        { id: "input-1", name: "arg1", value: "" },
+        { id: "input-2", name: "arg2", value: "" },
+      ],
+      outputs: [{ id: "output-1", name: "result", type: "object" }],
     },
   });
 }

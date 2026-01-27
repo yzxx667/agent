@@ -7,8 +7,18 @@
  * 3. 变量引用格式处理
  */
 
-import type { WorkflowNode, WorkflowEdge, WorkflowNodeData } from './types';
-import { NodeType, type StartNodeData, type LLMNodeData, type CodeNodeData, type APINodeData, type BranchNodeData } from './types';
+import type {
+  WorkflowNode,
+  WorkflowEdge,
+  WorkflowNodeData,
+  APINodeData,
+} from "./types";
+import {
+  NodeType,
+  type StartNodeData,
+  type LLMNodeData,
+  type CodeNodeData,
+} from "./types";
 
 // ==================== 类型定义 ====================
 
@@ -33,8 +43,6 @@ export interface WorkflowVariable {
   sourceNodeType: NodeType;
 }
 
-// ==================== 核心函数 ====================
-
 /**
  * 获取所有上游节点的 ID
  *
@@ -45,7 +53,10 @@ export interface WorkflowVariable {
  * @param edges - 工作流的所有边
  * @returns 所有上游节点的 ID 列表
  */
-export function getUpstreamNodeIds(nodeId: string, edges: WorkflowEdge[]): string[] {
+export function getUpstreamNodeIds(
+  nodeId: string,
+  edges: WorkflowEdge[],
+): string[] {
   const result: string[] = [];
   const visited = new Set<string>();
   const queue: string[] = [nodeId];
@@ -72,20 +83,25 @@ export function getUpstreamNodeIds(nodeId: string, edges: WorkflowEdge[]): strin
  * 从节点中提取输出变量
  *
  * 根据节点类型，提取该节点产生的输出变量
- * - 开始节点：提取 inputs（输入变量作为后续节点的可用变量）
- * - 大模型节点：提取 outputs
- * - 代码节点：暂时没有明确的输出变量
+ * 不同类型的节点有不同的输出格式：
+ * - 开始节点：inputs 数组
+ * - 大模型节点：outputs 数组
+ * - 代码节点：outputs 数组
  *
  * @param node - 工作流节点
- * @returns 该节点的输出变量列表
+ * @returns 变量列表（不含来源信息）
  */
-export function extractNodeOutputs(node: WorkflowNode): Omit<WorkflowVariable, 'sourceNodeId' | 'sourceNodeLabel' | 'sourceNodeType'>[] {
-  const nodeType = node.type as NodeType;
+export function extractNodeOutputs(
+  node: WorkflowNode,
+): Omit<
+  WorkflowVariable,
+  "sourceNodeId" | "sourceNodeLabel" | "sourceNodeType"
+>[] {
   const data = node.data as WorkflowNodeData;
 
-  switch (nodeType) {
+  switch (node.type) {
     case NodeType.START: {
-      // 开始节点的输入变量 = 后续节点的可用变量
+      // 开始节点的输入变量就是工作流的输入
       const startData = data as StartNodeData;
       return (startData.inputs || []).map((input) => ({
         id: input.id,
@@ -98,8 +114,8 @@ export function extractNodeOutputs(node: WorkflowNode): Omit<WorkflowVariable, '
     case NodeType.LLM: {
       // 大模型节点的输出变量
       const llmData = data as LLMNodeData;
-      return (llmData.outputs || []).map((output, index) => ({
-        id: `${node.id}-output-${index}`,
+      return (llmData.outputs || []).map((output) => ({
+        id: output.id,
         name: output.name,
         type: output.type,
         description: output.description,
@@ -109,11 +125,10 @@ export function extractNodeOutputs(node: WorkflowNode): Omit<WorkflowVariable, '
     case NodeType.CODE: {
       // 代码节点的输出变量
       const codeData = data as CodeNodeData;
-      return (codeData.outputs || []).map((output, index) => ({
-        id: `${node.id}-output-${index}`,
+      return (codeData.outputs || []).map((output) => ({
+        id: output.id,
         name: output.name,
         type: output.type,
-        description: `代码节点输出: ${output.name}`,
       }));
     }
 
@@ -128,9 +143,14 @@ export function extractNodeOutputs(node: WorkflowNode): Omit<WorkflowVariable, '
       }));
     }
 
-    case NodeType.BRANCH: {
-      // 分支器节点不产生输出变量，只是根据条件引导流程
-      return [];
+    case NodeType.CODE: {
+      const codeData = data as CodeNodeData;
+      return (codeData.outputs || []).map((output, index) => ({
+        id: `${node.id}-output-${index}`,
+        name: output.name,
+        type: output.type,
+        description: `代码节点输出: ${output.name}`,
+      }));
     }
 
     default:
@@ -141,43 +161,45 @@ export function extractNodeOutputs(node: WorkflowNode): Omit<WorkflowVariable, '
 /**
  * 获取指定节点的所有可用变量
  *
- * 这是主要的对外 API，组合使用 getUpstreamNodeIds 和 extractNodeOutputs
- * 返回当前节点可以引用的所有上游变量
+ * 这是主要的对外 API，它：
+ * 1. 找到所有上游节点
+ * 2. 提取每个上游节点的输出变量
+ * 3. 添加来源信息并返回
  *
  * @param nodeId - 当前节点 ID
  * @param nodes - 工作流的所有节点
  * @param edges - 工作流的所有边
- * @returns 所有可用变量列表，包含来源信息
+ * @returns 所有可用变量列表
  */
 export function getAvailableVariables(
   nodeId: string,
   nodes: WorkflowNode[],
-  edges: WorkflowEdge[]
+  edges: WorkflowEdge[],
 ): WorkflowVariable[] {
-  const variables: WorkflowVariable[] = [];
-
   // 1. 获取所有上游节点 ID
   const upstreamNodeIds = getUpstreamNodeIds(nodeId, edges);
 
-  // 2. 遍历上游节点，收集变量
+  // 2. 收集所有上游节点的输出变量
+  const variables: WorkflowVariable[] = [];
+
   for (const upstreamId of upstreamNodeIds) {
     const node = nodes.find((n) => n.id === upstreamId);
     if (!node) continue;
 
-    // 提取该节点的输出变量
+    // 提取节点输出
     const outputs = extractNodeOutputs(node);
 
     // 添加来源信息
-    variables.push(
-      ...outputs.map((output) => ({
+    for (const output of outputs) {
+      variables.push({
         ...output,
         sourceNodeId: node.id,
-        sourceNodeLabel: (node.data as WorkflowNodeData).label || '未命名节点',
+        sourceNodeLabel:
+          (node.data as WorkflowNodeData).label || node.type || "未知节点",
         sourceNodeType: node.type as NodeType,
-      }))
-    );
+      });
+    }
   }
 
   return variables;
 }
-

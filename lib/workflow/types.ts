@@ -23,6 +23,7 @@ export enum NodeType {
   /** 代码节点 - 执行自定义代码 */
   CODE = "code",
   LLM = "llm", // 新增
+  API = "api",
 }
 
 /**
@@ -124,12 +125,12 @@ export interface EndNodeData extends BaseNodeData {
 /**
  * 代码节点数据
  */
-export interface CodeNodeData extends BaseNodeData {
-  /** 编程语言 */
-  language: "javascript" | "python";
-  /** 代码内容 */
-  code: string;
-}
+// export interface CodeNodeData extends BaseNodeData {
+//   /** 编程语言 */
+//   language: "javascript" | "python";
+//   /** 代码内容 */
+//   code: string;
+// }
 
 /**
  * 输出变量定义
@@ -166,6 +167,112 @@ export interface LLMNodeData extends BaseNodeData {
 }
 
 /**
+ * HTTP 请求方法
+ */
+export type HttpMethod = "GET" | "POST" | "PUT" | "DELETE" | "PATCH";
+
+/**
+ * 请求体类型
+ */
+export type BodyType =
+  | "none"
+  | "form-data"
+  | "json"
+  | "raw"
+  | "x-www-form-urlencoded";
+
+/**
+ * 键值对（用于 params、headers、form-data）
+ */
+export interface KeyValuePair {
+  id: string;
+  key: string;
+  value: string;
+  enabled?: boolean;
+}
+
+/**
+ * API 节点输出变量
+ */
+export interface APIOutputVariable {
+  name: string;
+  type: "string" | "number" | "object";
+  description: string;
+}
+
+/**
+ * API 节点数据
+ */
+export interface APINodeData extends BaseNodeData {
+  /** HTTP 方法 */
+  method: HttpMethod;
+  /** 请求 URL */
+  url: string;
+  /** 查询参数 */
+  params: KeyValuePair[];
+  /** 请求头 */
+  headers: KeyValuePair[];
+  /** 是否启用鉴权 */
+  authEnabled: boolean;
+  /** 鉴权类型 */
+  authType?: "basic" | "bearer" | "api-key";
+  /** 鉴权值 */
+  authValue?: string;
+  /** 请求体类型 */
+  bodyType: BodyType;
+  /** form-data 数据 */
+  bodyFormData: KeyValuePair[];
+  /** JSON 请求体 */
+  bodyJson: string;
+  /** 原始文本请求体 */
+  bodyRaw: string;
+  /** 超时时间（秒） */
+  timeout: number;
+  /** 重试次数 */
+  retryCount: number;
+  /** 输出变量 */
+  outputs: APIOutputVariable[];
+}
+
+/**
+ * 代码节点输入变量
+ */
+export interface CodeInputVariable {
+  /** 唯一标识 */
+  id: string;
+  /** 变量名，如 arg1, arg2 */
+  name: string;
+  /** 变量值，可以是字面量或变量引用如 {{开始.input}} */
+  value: string;
+}
+
+/**
+ * 代码节点输出变量
+ */
+export interface CodeOutputVariable {
+  /** 唯一标识 */
+  id: string;
+  /** 变量名 */
+  name: string;
+  /** 变量类型 */
+  type: string;
+}
+
+/**
+ * 代码节点数据
+ */
+export interface CodeNodeData extends BaseNodeData {
+  /** 编程语言 */
+  language: "javascript" | "python3";
+  /** 代码内容 */
+  code: string;
+  /** 输入变量列表 */
+  inputs: CodeInputVariable[];
+  /** 输出变量列表 */
+  outputs: CodeOutputVariable[];
+}
+
+/**
  * 所有节点数据的联合类型
  * 添加新节点时，需要在这里添加对应的数据类型
  */
@@ -173,7 +280,8 @@ export type WorkflowNodeData =
   | StartNodeData
   | EndNodeData
   | CodeNodeData
-  | LLMNodeData;
+  | LLMNodeData
+  | APINodeData; // 新增
 
 /**
  * 工作流节点类型

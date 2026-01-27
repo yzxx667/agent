@@ -24,6 +24,7 @@ import {
   CanvasToolbar,
   PlacingNodePreview,
 } from "@/components/workflow/toolbar";
+import { APINode } from "../nodes/APINode";
 
 // 确保节点已注册
 initializeNodeRegistry();
@@ -34,6 +35,7 @@ const nodeTypes: NodeTypes = {
   [NodeType.END]: EndNode,
   [NodeType.CODE]: CodeNode,
   [NodeType.LLM]: LLMNode, // 新增
+  [NodeType.API]: APINode,
 };
 
 /**

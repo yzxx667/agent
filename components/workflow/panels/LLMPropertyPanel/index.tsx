@@ -30,13 +30,12 @@ import {
 } from "@ant-design/icons";
 import { useWorkflowStore } from "@/stores/workflowStore";
 import { MODEL_OPTIONS } from "@/components/workflow/nodes/LLMNode";
-import type {
-  PropertyPanelProps,
-  LLMNodeData,
-  StartNodeData,
-  InputVariable,
-} from "@/lib/workflow/types";
-import { NodeType } from "@/lib/workflow/types";
+// 新代码
+import type { PropertyPanelProps, LLMNodeData } from "@/lib/workflow/types";
+import {
+  getAvailableVariables,
+  type WorkflowVariable,
+} from "@/lib/workflow/variableUtils";
 
 const { TextArea } = Input;
 
@@ -50,11 +49,12 @@ const VariableIcon: React.FC = () => (
 /**
  * 变量选择器组件
  */
+// 新代码
 interface VariableSelectorProps {
   visible: boolean;
   onSelect: (variableName: string) => void;
   onClose: () => void;
-  variables: InputVariable[];
+  variables: WorkflowVariable[]; // 使用新的变量类型
 }
 
 const VariableSelector: React.FC<VariableSelectorProps> = ({
@@ -122,20 +122,22 @@ const VariableSelector: React.FC<VariableSelectorProps> = ({
             {filteredVariables.map((variable) => (
               <div
                 key={variable.id}
-                className="flex items-center justify-between p-2 rounded hover:bg-blue-50 cursor-pointer"
-                onClick={() => {
-                  onSelect(variable.name);
-                  onClose();
-                  setSearchText("");
-                }}
+                className="flex items-center justify-between p-2 hover:bg-gray-50 rounded cursor-pointer"
+                onClick={() => onSelect(variable.name)}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-blue-500 font-mono text-xs bg-blue-50 px-1.5 py-0.5 rounded">
                     {"{x}"}
                   </span>
-                  <span className="text-gray-800 font-medium">
-                    {variable.name}
-                  </span>
+                  <div className="flex flex-col">
+                    <span className="text-gray-800 font-medium">
+                      {variable.name}
+                    </span>
+                    {/* 新增：显示变量来源 */}
+                    <span className="text-gray-400 text-xs">
+                      来自: {variable.sourceNodeLabel}
+                    </span>
+                  </div>
                 </div>
                 <span className="text-gray-400 text-xs">{variable.type}</span>
               </div>
@@ -359,12 +361,18 @@ export const LLMPropertyPanel: React.FC<PropertyPanelProps<LLMNodeData>> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // 获取开始节点的输入变量
-  const startNodeVariables = useMemo(() => {
-    const startNode = nodes.find((node) => node.type === NodeType.START);
-    if (!startNode) return [];
-    const startData = startNode.data as StartNodeData;
-    return startData.inputs || [];
-  }, [nodes]);
+  // const startNodeVariables = useMemo(() => {
+  //   const startNode = nodes.find((node) => node.type === NodeType.START);
+  //   if (!startNode) return [];
+  //   const startData = startNode.data as StartNodeData;
+  //   return startData.inputs || [];
+  // }, [nodes]);
+
+  // 新代码
+  const edges = useWorkflowStore((state) => state.edges); // 新增：获取边
+  const availableVariables = useMemo(() => {
+    return getAvailableVariables(nodeId, nodes, edges);
+  }, [nodeId, nodes, edges]);
 
   // 获取当前选择的模型名称
   const selectedModel = useMemo(() => {
@@ -467,7 +475,7 @@ export const LLMPropertyPanel: React.FC<PropertyPanelProps<LLMNodeData>> = ({
             visible={showVariableSelector}
             onSelect={handleSelectVariable}
             onClose={() => setShowVariableSelector(false)}
-            variables={startNodeVariables}
+            variables={availableVariables}
           />
         </div>
       </div>
@@ -545,10 +553,10 @@ export const LLMPropertyPanel: React.FC<PropertyPanelProps<LLMNodeData>> = ({
       >
         <div className="space-y-3">
           {/* 变量快速选择 */}
-          {startNodeVariables.length > 0 && (
+          {availableVariables.length > 0 && (
             <div className="flex flex-wrap gap-2 pb-2">
               <span className="text-xs text-gray-500">可用变量：</span>
-              {startNodeVariables.map((variable) => (
+              {availableVariables.map((variable) => (
                 <button
                   key={variable.id}
                   className="px-2 py-1 text-xs bg-blue-50 text-blue-600 rounded hover:bg-blue-100"
