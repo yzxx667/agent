@@ -152,7 +152,11 @@ const CanvasContent: React.FC = () => {
       onPaneClick={handlePaneClick}
       fitView
       fitViewOptions={{ padding: 0.2 }}
-      defaultEdgeOptions={{ type: "smoothstep", animated: false }}
+      defaultEdgeOptions={{
+        type: "smoothstep",
+        animated: false,
+        style: { stroke: "#3b82f6", strokeWidth: 2 },
+      }}
       className={placingNodeType ? "cursor-crosshair" : ""}
     >
       {/* 背景网格 */}
