@@ -56,7 +56,7 @@ export const APINode: React.FC<APINodeProps> = ({ id, data, selected }) => {
     const uniqueVars = Array.from(
       new Map(variables.map((v) => [v.name, v])).values(),
     );
-    console.log(variables, "var");
+    // console.log(variables, "var");
     return uniqueVars;
   }, [data]);
 

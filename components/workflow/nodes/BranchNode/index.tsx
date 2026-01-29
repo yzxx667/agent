@@ -4,6 +4,7 @@ import React from "react";
 import { BranchesOutlined } from "@ant-design/icons";
 import { Handle, Position } from "@xyflow/react";
 import type { BranchNodeData } from "@/lib/workflow/types";
+import { CustomHandle } from "../CustomHandle";
 
 interface BranchNodeProps {
   data: BranchNodeData;
@@ -17,13 +18,19 @@ export const BranchNode: React.FC<BranchNodeProps> = ({ data, selected }) => {
       min-w-[280px] rounded-xl shadow-sm bg-white border-2
       ${selected ? "border-blue-500 shadow-md" : "border-gray-200"}
       transition-all duration-200
+      group
     `}
     >
       {/* 输入连接点 */}
-      <Handle
+      {/* <Handle
         type="target"
         position={Position.Left}
         className="!w-3 !h-3 !bg-gray-400 !border-2 !border-white"
+      /> */}
+      <CustomHandle
+        type="target"
+        position={Position.Left}
+        className="!w-5 !h-5 !bg-gray-400 !border-2 !border-white"
       />
 
       {/* 节点头部 */}
@@ -51,11 +58,22 @@ export const BranchNode: React.FC<BranchNodeProps> = ({ data, selected }) => {
               </div>
 
               {/* 该分支的输出连接点 */}
-              <Handle
+              {/* <Handle
                 type="source"
                 position={Position.Right}
                 id={branch.id} // 关键：使用分支 ID 作为 Handle ID
                 className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white !absolute"
+                style={{
+                  top: "50%",
+                  right: "-18px",
+                  transform: "translateY(-50%)",
+                }}
+              /> */}
+              <CustomHandle
+                type="source"
+                position={Position.Right}
+                id={branch.id}
+                className="!w-5 !h-5 !bg-blue-500 !border-2 !border-white !absolute"
                 style={{
                   top: "50%",
                   right: "-18px",
@@ -76,11 +94,22 @@ export const BranchNode: React.FC<BranchNodeProps> = ({ data, selected }) => {
             </div>
 
             {/* 默认分支的输出连接点 */}
-            <Handle
+            {/* <Handle
               type="source"
               position={Position.Right}
               id="else" // 固定 ID
               className="!w-3 !h-3 !bg-blue-500 !border-2 !border-white !absolute"
+              style={{
+                top: "50%",
+                right: "-18px",
+                transform: "translateY(-50%)",
+              }}
+            /> */}
+            <CustomHandle
+              type="source"
+              position={Position.Right}
+              id="else"
+              className="!w-5 !h-5 !bg-blue-500 !border-2 !border-white !absolute"
               style={{
                 top: "50%",
                 right: "-18px",
