@@ -10,6 +10,7 @@ import { useReactFlow } from "@xyflow/react"; // 新增
 import { Button, Popover, Tooltip, Divider, Badge } from "antd";
 import { useStore } from "zustand"; // 新增
 import { useWorkflowStore } from "@/stores/workflowStore"; // 新增
+import { getLayoutedElements } from "@/lib/workflow/layoutAlgorithm";
 import {
   PlusOutlined,
   ZoomInOutlined,
@@ -17,6 +18,7 @@ import {
   AimOutlined,
   UndoOutlined,
   RedoOutlined,
+  PartitionOutlined,
 } from "@ant-design/icons";
 import { NodeSelector } from "../NodeSelector";
 import { CheckSquareOutlined } from "@ant-design/icons";
@@ -30,7 +32,7 @@ export const CanvasToolbar: React.FC = () => {
   const [checklistOpen, setChecklistOpen] = useState(false);
 
   // 3. 获取节点和边数据
-  const { nodes, edges } = useWorkflowStore();
+  const { nodes, edges, setNodes, setEdges } = useWorkflowStore();
 
   // 4. 计算验证问题数量
   const issueCount = useMemo(() => {
@@ -103,6 +105,20 @@ export const CanvasToolbar: React.FC = () => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [undo, redo]);
+
+  // 自动布局
+  const handleAutoLayout = useCallback(() => {
+    const { nodes: layoutNodes, edges: layoutEdges } = getLayoutedElements(
+      nodes,
+      edges,
+      "LR",
+    );
+    setNodes(layoutNodes);
+    setEdges(layoutEdges);
+    setTimeout(() => {
+      fitView({ padding: 0.2, duration: 800 }); // 边缘留 20% 空白
+    }, 10);
+  }, [nodes, edges, setNodes, setEdges, fitView]);
 
   return (
     <div
@@ -182,6 +198,15 @@ export const CanvasToolbar: React.FC = () => {
             onClick={() => setChecklistOpen(true)}
           />
         </Badge>
+      </Tooltip>
+      {/* 自动布局 */}
+      <Tooltip title="自动布局">
+        <Button
+          type="text"
+          icon={<PartitionOutlined />}
+          className="text-gray-500 hover:text-gray-700"
+          onClick={handleAutoLayout}
+        />
       </Tooltip>
       <ValidationChecklist
         open={checklistOpen}

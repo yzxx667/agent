@@ -1,3 +1,7 @@
+"use client";
+
+import { NodeType } from "@/lib/workflow";
+import { useWorkflowStore } from "@/stores/workflowStore";
 import { PlusOutlined } from "@ant-design/icons";
 import {
   Handle,
@@ -7,123 +11,137 @@ import {
   useNodeId,
   useReactFlow,
 } from "@xyflow/react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { NodeHoverMenu } from "../NodeHoverMenu";
-import { NodeType } from "@/lib/workflow";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useWorkflowStore } from "@/stores/workflowStore";
 
 interface CustomHandleProps {
   type: "source" | "target";
   position: Position;
-  className?: string;
-  style?: React.CSSProperties;
   id?: string;
 }
+
 export const CustomHandle: React.FC<CustomHandleProps> = ({
   type,
   position,
   id,
-  className,
-  style,
 }) => {
-  const [showNodeMenu, setShowNodeMenu] = useState<boolean>(false);
-  const closeTimer = useRef<NodeJS.Timeout | null>(null);
-
-  const NodeId = useNodeId();
-  const edges = useEdges();
+  // 1. 获取 React Flow 核心状态
+  const nodeId = useNodeId();
   const connection = useConnection();
+  const edges = useEdges();
+  // console.log("props", type, position, id);
+  // console.log("CustomHandle edges:", edges);
   const { getNode } = useReactFlow();
+  const addNode = useWorkflowStore((state) => state.addNode);
+  // 2. 内部状态管理（用于节点菜单）
+  const [showNodeList, setShowNodeList] = useState(false);
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  // 正在连接
   const isConnecting = connection.inProgress;
-  const isConnected = useMemo(
-    () =>
-      edges.some((edge) => {
-        if (type === "source") {
-          return edge.source === NodeId && (!id || edge.sourceHandle === id);
-        } else {
-          return edge.target === NodeId && (!id || edge.targetHandle === id);
-        }
-      }),
-    [edges, NodeId, type, id],
+  const isSource = isConnecting && connection.fromNode?.id === nodeId;
+
+  // 检查当前 Handle 是否已有连线
+  const isConnected = useMemo(() => {
+    return edges.some((edge) => {
+      if (type === "source") {
+        return edge.source === nodeId && (!id || edge.sourceHandle === id);
+      } else {
+        return edge.target === nodeId && (!id || edge.targetHandle === id);
+      }
+    });
+  }, [edges, nodeId, type, id]);
+
+  // 4. 计算可见性
+  //   选择线连接的时候（过程中），当前handle以及所有可能的目标handle高亮
+  const isVisible =
+    isConnected || (isConnecting && !isSource && type === "target");
+  const isLeft = position === Position.Left;
+
+  // 5. 事件处理
+  const handleAddNode = useCallback(
+    (nodeType: NodeType) => {
+      if (!nodeId) return;
+      const currentNode = getNode(nodeId);
+      if (!currentNode) return;
+      // [优化] 新节点间距设为 500px，让连线更舒展
+      addNode(nodeType, {
+        x: currentNode.position.x + 500,
+        y: currentNode.position.y,
+      });
+      setShowNodeList(false);
+    },
+    [addNode, getNode, nodeId],
   );
 
-  useEffect(() => {
-    if (isConnecting) {
-      // 连接过程中，显示所有可连接的 target handle
-      if (type === "target" && connection.fromNode?.id !== NodeId) {
-        setShowNodeMenu(true);
+  const handleClick = useCallback(
+    (e: React.MouseEvent) => {
+      // 只有作为输出点且未连接时，点击才打开菜单
+      if (type === "source" && !isConnected) {
+        e.stopPropagation();
+        setShowNodeList((prev) => !prev);
       }
-    } else {
-      setShowNodeMenu(false);
+    },
+    [type, isConnected],
+  );
+
+  const handleMouseEnter = useCallback(() => {
+    if (hideTimerRef.current) {
+      clearTimeout(hideTimerRef.current);
+      hideTimerRef.current = null;
     }
-  }, [isConnecting]);
+  }, []);
 
-  //   新增节点
-  const addNode = useWorkflowStore((state) => state.addNode);
-  const handleSelect = (nodeType: NodeType) => {
-    // addNode(nodeType, { x: position.x, y: 0 });
-    const currentNode = getNode(NodeId!);
-    if (!currentNode) return;
-    addNode(nodeType, {
-      x: currentNode.position.x + 400,
-      y: currentNode.position.y,
-    });
-    setShowNodeMenu(false);
-  };
-  const handleClose = () => {};
+  const handleMouseLeave = useCallback(() => {
+    hideTimerRef.current = setTimeout(() => setShowNodeList(false), 200);
+  }, []);
 
-  const handleMouseEnter = () => {
-    if (closeTimer.current) {
-      clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-    setShowNodeMenu(true);
-  };
-  const handleMouseLeave = () => {
-    closeTimer.current = setTimeout(() => {
-      setShowNodeMenu(false);
-    }, 200);
-  };
-
-  const handleClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.stopPropagation();
-    setShowNodeMenu((prev) => !prev);
-  };
-
+  // 检查当前 Handle 是否已有连线
   return (
     <>
+      {/* 核心 Handle 组件 */}
       <Handle
-        className={`!w-4 !h-4 !bg-transparent !border-0 flex items-center justify-center transition-opacity duration-300 !cursor-pointer ${
-          showNodeMenu ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-        } ${isConnected ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${className}`}
         type={type}
         position={position}
         id={id}
+        onClick={handleClick}
+        // 使用 Tailwind 类名控制样式
+        className={`
+                    !bg-blue-500               /* 始终蓝色背景 */
+                    transition-all duration-200 /* 平滑过渡动画 */
+                    nodrag nopan               /* 阻止事件冒泡 */
+                    flex items-center justify-center
+                    /* === 可见性控制 === */
+                    ${isVisible ? "!opacity-100" : "!opacity-0 group-hover:!opacity-100"}
+                    /* === 状态样式（关键） === */
+                    ${
+                      isConnected
+                        ? "!w-3 !h-3 !border-0" // [已连接]：实心小圆，无边框 -> 消除间隙！
+                        : "!w-6 !h-6 !border-2 !border-white shadow-md hover:!scale-110 !cursor-pointer" // [未连接]：空心大圆
+                    }
+                `}
+        onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        style={style}
       >
-        <div
-          className={`flex items-center justify-center w-full h-full text-white transition-transform duration-300 bg-blue-500 rounded-full  shadow-sm hover:scale-125 ${
-            showNodeMenu ? "scale-125" : ""
-          }`}
-          onClick={handleClick}
-        >
-          {isConnected ? null : <PlusOutlined style={{ fontSize: "10px" }} />}
-        </div>
+        {/* 未连接时显示 + 图标 */}
+        {!isConnected && (
+          <PlusOutlined
+            className="text-white text-[10px] pointer-events-none"
+            style={{ lineHeight: 1 }}
+          />
+        )}
       </Handle>
-      {showNodeMenu && type === "source" && (
+
+      {/* 节点选择菜单 - 抽离为独立组件 */}
+      {showNodeList && type === "source" && (
         <NodeHoverMenu
-          onSelect={(type) => handleSelect(type)}
-          onClose={handleClose}
+          onSelect={handleAddNode}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           style={{
             top: "50%",
             transform: "translateY(-50%)",
-            left: position === Position.Right ? "106%" : undefined,
-            right: position === Position.Left ? "100%" : undefined,
-            zIndex: 1000,
+            [isLeft ? "right" : "left"]: "100%",
+            [isLeft ? "marginRight" : "marginLeft"]: 15,
           }}
         />
       )}

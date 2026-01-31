@@ -39,6 +39,8 @@ interface WorkflowState {
   isLoading: boolean;
   // 是否有未保存的修改
   isDirty: boolean;
+  // [新增] 是否开启防撞功能
+  enableCollision: boolean;
 
   // ==================== Actions ====================
   // 设置当前工作流数据
@@ -51,6 +53,8 @@ interface WorkflowState {
   setDirty: (dirty: boolean) => void;
   // 重置状态
   reset: () => void;
+  // [新增] 切换开关的方法
+  toggleCollision: () => void;
 
   /** 画布中的所有节点 */
   nodes: WorkflowNode[];
@@ -134,6 +138,8 @@ const initialState = {
   isDirty: false,
   // 当前是否选中放置
   placingNodeType: null as NodeType | null,
+  // 默认开启
+  enableCollision: true,
 };
 
 /**
@@ -231,12 +237,15 @@ export const useWorkflowStore = create<WorkflowState>()(
       setDirty: (isDirty: boolean) => set({ isDirty }),
       // 重置状态
       reset: () => set(initialState),
+      toggleCollision: () =>
+        set((state) => ({ enableCollision: !state.enableCollision })),
     }),
     {
       // 只追踪 nodes 和 edges 的变化（不追踪 UI 状态如 selectedNodeId）
       partialize: (state) => ({
         nodes: state.nodes,
         edges: state.edges,
+        enableCollision: state.enableCollision,
       }),
       // 限制历史记录数量，防止内存占用过大
       limit: 50,
