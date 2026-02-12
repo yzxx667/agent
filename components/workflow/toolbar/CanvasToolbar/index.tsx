@@ -19,6 +19,8 @@ import {
   UndoOutlined,
   RedoOutlined,
   PartitionOutlined,
+  AppstoreFilled,
+  AppstoreOutlined,
 } from "@ant-design/icons";
 import { NodeSelector } from "../NodeSelector";
 import { CheckSquareOutlined } from "@ant-design/icons";
@@ -27,6 +29,7 @@ import { validateWorkflow } from "@/lib/workflow/validation";
 
 export const CanvasToolbar: React.FC = () => {
   const [selectorOpen, setSelectorOpen] = useState(false);
+  const { enableCollision, toggleCollision } = useWorkflowStore();
 
   // 2. 添加状态
   const [checklistOpen, setChecklistOpen] = useState(false);
@@ -206,6 +209,22 @@ export const CanvasToolbar: React.FC = () => {
           icon={<PartitionOutlined />}
           className="text-gray-500 hover:text-gray-700"
           onClick={handleAutoLayout}
+        />
+      </Tooltip>
+      <Tooltip title={enableCollision ? "关闭自动避让" : "开启自动避让"}>
+        <Button
+          type="text"
+          // 开启时显示实心蓝图标，关闭时显示空心灰图标
+          icon={
+            enableCollision ? (
+              <AppstoreFilled style={{ color: "#1677ff" }} />
+            ) : (
+              <AppstoreOutlined />
+            )
+          }
+          // 开启时增加浅蓝背景
+          className={enableCollision ? "bg-blue-50" : "text-gray-500"}
+          onClick={toggleCollision}
         />
       </Tooltip>
       <ValidationChecklist
